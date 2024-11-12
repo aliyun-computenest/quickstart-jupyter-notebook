@@ -1,0 +1,112 @@
+Service:
+  RegionId: cn-hangzhou
+  DeployType: ros
+  DeployMetadata:
+    ServiceInstanceNameRule:
+      Prefix: jupyter-
+    SupplierDeployMetadata:
+      ArtifactRelation:
+        'centos_7_9_x64_20G_alibase_20240403.vhd':
+          ArtifactId: ${Artifact.EcsImage.ArtifactId}
+          ArtifactVersion: ${Artifact.EcsImage.ArtifactVersion}
+    TemplateConfigs:
+      - Name: 单机版
+        Url: 'ros_templates/template.yaml'
+        AllowedRegions:
+          - cn-qingdao
+          - cn-beijing
+          - cn-zhangjiakou
+          - cn-huhehaote
+          - cn-wulanchabu
+          - cn-hangzhou
+          - cn-shanghai
+          - cn-shenzhen
+          - cn-chengdu
+          - cn-heyuan
+          - cn-guangzhou
+          - cn-hongkong
+          - ap-northeast-1
+          - ap-southeast-1
+          - ap-southeast-3
+          - ap-southeast-5
+          - ap-southeast-6
+          - us-east-1
+          - us-west-1
+          - eu-west-1
+          - eu-central-1
+          - me-east-1
+          - me-central-1
+          - cn-nanjing
+          - cn-fuzhou
+          - ap-southeast-7
+          - ap-northeast-2
+          - cn-wuhan-lr
+  ServiceType: private
+  ServiceInfo:
+    Locale: zh-CN
+    ShortDescription: jupyter deploy
+    Image: 'resources/icons/service_logo.png'
+Artifact:
+  EcsImage:
+    ArtifactType: EcsImage
+    ArtifactName: jupyter
+    Description: jupyter
+    ArtifactProperty:
+      RegionId: ${ImageBuilder.EcsImage.RegionId}
+      ImageId: ${ImageBuilder.EcsImage.SourceImageId}
+    SupportRegionIds:
+      - cn-qingdao
+      - cn-beijing
+      - cn-zhangjiakou
+      - cn-huhehaote
+      - cn-wulanchabu
+      - cn-hangzhou
+      - cn-shanghai
+      - cn-shenzhen
+      - cn-chengdu
+      - cn-heyuan
+      - cn-guangzhou
+      - cn-hongkong
+      - ap-northeast-1
+      - ap-southeast-1
+      - ap-southeast-3
+      - ap-southeast-5
+      - ap-southeast-6
+      - us-east-1
+      - us-west-1
+      - eu-west-1
+      - eu-central-1
+      - me-east-1
+      - me-central-1
+      - cn-nanjing
+      - cn-fuzhou
+      - ap-southeast-7
+      - ap-northeast-2
+      - cn-wuhan-lr
+ImageBuilder:
+  EcsImage:
+    RegionId: ap-southeast-1
+    SourceImageId: centos_7_9_x64_20G_alibase_20240628.vhd
+    SystemDiskSize: 40
+    InstanceType: ecs.c6.large
+    InternetMaxBandwidthOut: 10
+    CommandType: RunShellScript
+    Timeout: 10800
+    Tags: [ ]
+    CommandContent: |-
+      #!/bin/bash
+      sudo yum install python3 python3-pip -y
+      sudo pip3 install --upgrade pip
+      sudo pip3 install notebook jupyter
+      sudo echo 'export PATH="$PATH:/usr/local/bin/jupyter"' >> ~/.bash_profile
+      source ~/.bashrc
+      jupyter notebook --generate-config
+      
+      cat > /root/.jupyter/jupyter_notebook_config.py <<EOF
+      c.NotebookApp.port = 8888  
+      c.NotebookApp.allow_remote_access = True
+      c.NotebookApp.ip='*'  
+      c.NotebookApp.open_browser = False
+      EOF
+      
+      nohup jupyter notebook --allow-root &
