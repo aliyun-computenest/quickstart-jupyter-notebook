@@ -212,13 +212,14 @@ Resources:
           - Ref: VpcId
       SecurityGroupIngress:
         - Priority: 1
-          PortRange: 8888/8888
-          SourceCidrIp: 0.0.0.0/0
-          IpProtocol: tcp
-        - Priority: 1
           PortRange: 22/22
           SourceCidrIp: 0.0.0.0/0
           IpProtocol: tcp
+        - PortRange: 8888/8888
+          Priority: 1
+          SourceCidrIp: 100.104.0.0/16
+          IpProtocol: tcp
+          NicType: internet
   InstanceGroup:
     Type: ALIYUN::ECS::InstanceGroup
     Properties:
@@ -251,8 +252,8 @@ Resources:
         Ref: EcsInstanceType
       Password:
         Ref: InstancePassword
-      AllocatePublicIP: true
-      InternetMaxBandwidthOut: 5
+      AllocatePublicIP: False
+#      InternetMaxBandwidthOut: 5
 Outputs:
   ServerAddress:
     Description:
@@ -263,10 +264,10 @@ Outputs:
         - 'http://${ServerAddress}:8888'
         - ServerAddress:
             Fn::Select:
-            - 0
-            - Fn::GetAtt:
-              - InstanceGroup
-              - PublicIps
+              - 0
+              - Fn::GetAtt:
+                  - InstanceGroup
+                  - PrivateIps
 Metadata:
   ALIYUN::ROS::Interface:
     ParameterGroups:
