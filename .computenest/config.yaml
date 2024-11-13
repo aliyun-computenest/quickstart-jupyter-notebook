@@ -119,7 +119,7 @@ ImageBuilder:
       Type=simple
       Restart=on-failure
       WorkingDirectory=/root
-      ExecStart=/usr/bin/nohup /usr/local/bin/jupyter notebook --allow-root >> /root/nohup.out
+      ExecStart=/usr/bin/nohup /usr/local/bin/jupyter notebook --allow-root
       TimeoutStartSec=30
       
       [Install]
