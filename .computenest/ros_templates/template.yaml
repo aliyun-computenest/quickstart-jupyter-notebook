@@ -177,12 +177,29 @@ Parameters:
             Fn::Equals:
               - ${PayType}
               - PostPaid
+  OSType:
+    Type: String
+    Label:
+      en: os type
+      zh-cn: 操作系统类型
+    AllowedValues:
+      - centos
+      - ubuntu
+    AssociationPropertyMetadata:
+      ValueLabelMapping:
+        linux: CentOS 7.9 64位
+        windows: Ubuntu 24.04 64位
+    Default: linux
 Mappings: {}
 Conditions:
   CreateVpcConditions:
     Fn::Equals:
       - NewVPC
       - Ref: WhetherCreateVpc
+  CentOS:
+    Fn::Equals:
+      - centos
+      - Ref: OSType
 Resources:
   EcsVpc:
     Type: ALIYUN::ECS::VPC
@@ -220,7 +237,7 @@ Resources:
           SourceCidrIp: 100.104.0.0/16
           IpProtocol: tcp
           NicType: internet
-  InstanceGroup:
+  CentOSInstanceGroup:
     Type: ALIYUN::ECS::InstanceGroup
     Properties:
       InstanceChargeType:
@@ -253,6 +270,39 @@ Resources:
       Password:
         Ref: InstancePassword
       AllocatePublicIP: False
+  UbuntuInstanceGroup:
+    Type: ALIYUN::ECS::InstanceGroup
+    Properties:
+      InstanceChargeType:
+        Ref: PayType
+      PeriodUnit:
+        Ref: PayPeriodUnit
+      Period:
+        Ref: PayPeriod
+      VpcId:
+        Fn::If:
+          - CreateVpcConditions
+          - Ref: EcsVpc
+          - Ref: VpcId
+      VSwitchId:
+        Fn::If:
+          - CreateVpcConditions
+          - Ref: EcsVSwitch
+          - Ref: VSwitchId
+      ZoneId:
+        Ref: ZoneId
+      SecurityGroupId:
+        Ref: EcsSecurityGroup
+      MaxAmount: 1
+      IoOptimized: optimized
+      SystemDiskCategory: cloud_essd
+      SystemDiskSize: 200
+      ImageId: ubuntu_24_04_x64_20G_alibase_20241016.vhd
+      InstanceType:
+        Ref: EcsInstanceType
+      Password:
+        Ref: InstancePassword
+      AllocatePublicIP: False
 #      InternetMaxBandwidthOut: 5
 Outputs:
   ServerAddress:
@@ -260,14 +310,24 @@ Outputs:
       en: ServerAddress.
       zh-cn: 访问页面。
     Value:
-      Fn::Sub:
-        - 'http://${ServerAddress}:8888'
-        - ServerAddress:
-            Fn::Select:
-              - 0
-              - Fn::GetAtt:
-                  - InstanceGroup
-                  - PrivateIps
+      Fn::If:
+        - CentOS
+        - Fn::Sub:
+            - 'http://${ServerAddress}:8888'
+            - ServerAddress:
+                Fn::Select:
+                  - 0
+                  - Fn::GetAtt:
+                      - CentOSInstanceGroup
+                      - PrivateIps
+        - Fn::Sub:
+            - 'http://${ServerAddress}:8888'
+            - ServerAddress:
+                Fn::Select:
+                  - 0
+                  - Fn::GetAtt:
+                      - UbuntuInstanceGroup
+                      - PrivateIps
 Metadata:
   ALIYUN::ROS::Interface:
     ParameterGroups:
@@ -283,6 +343,7 @@ Metadata:
           - EcsInstanceType
           - SystemDiskCategory
           - SystemDiskSize
+          - OSType
           - InstancePassword
         Label:
           default:

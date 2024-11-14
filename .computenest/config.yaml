@@ -9,6 +9,9 @@ Service:
         'centos_7_9_x64_20G_alibase_20240403.vhd':
           ArtifactId: ${Artifact.EcsImage.ArtifactId}
           ArtifactVersion: ${Artifact.EcsImage.ArtifactVersion}
+        'ubuntu_24_04_x64_20G_alibase_20241016.vhd':
+          ArtifactId: ${Artifact.EcsUbuntuImage.ArtifactId}
+          ArtifactVersion: ${Artifact.EcsUbuntuImage.ArtifactVersion}
     TemplateConfigs:
       - Name: 单机版
         Url: 'ros_templates/template.yaml'
@@ -50,10 +53,46 @@ Artifact:
   EcsImage:
     ArtifactType: EcsImage
     ArtifactName: jupyter
-    Description: jupyter
+    Description: Deploy jupyter notebook to centos ECS
     ArtifactProperty:
       RegionId: ${ImageBuilder.EcsImage.RegionId}
       ImageId: ${ImageBuilder.EcsImage.SourceImageId}
+    SupportRegionIds:
+      - cn-qingdao
+      - cn-beijing
+      - cn-zhangjiakou
+      - cn-huhehaote
+      - cn-wulanchabu
+      - cn-hangzhou
+      - cn-shanghai
+      - cn-shenzhen
+      - cn-chengdu
+      - cn-heyuan
+      - cn-guangzhou
+      - cn-hongkong
+      - ap-northeast-1
+      - ap-southeast-1
+      - ap-southeast-3
+      - ap-southeast-5
+      - ap-southeast-6
+      - us-east-1
+      - us-west-1
+      - eu-west-1
+      - eu-central-1
+      - me-east-1
+      - me-central-1
+      - cn-nanjing
+      - cn-fuzhou
+      - ap-southeast-7
+      - ap-northeast-2
+      - cn-wuhan-lr
+  EcsUbuntuImage:
+    ArtifactType: EcsImage
+    ArtifactName: JupyterNotebookUbuntu
+    Description: Deploy jupyter notebook to ubuntu ECS
+    ArtifactProperty:
+      RegionId: ${ImageBuilder.EcsUbuntuImage.RegionId}
+      ImageId: ${ImageBuilder.EcsUbuntuImage.SourceImageId}
     SupportRegionIds:
       - cn-qingdao
       - cn-beijing
@@ -128,3 +167,51 @@ ImageBuilder:
       
       systemctl enable jupyter
       systemctl start jupyter
+  EcsUbuntuImage:
+    RegionId: ap-southeast-1
+    SourceImageId: ubuntu_24_04_x64_20G_alibase_20241016.vhd
+    SystemDiskSize: 40
+    InstanceType: ecs.c6.large
+    InternetMaxBandwidthOut: 10
+    CommandType: RunShellScript
+    Timeout: 10800
+    Tags: [ ]
+    CommandContent: |-
+      #!/bin/bash
+
+      # 更新包列表并安装 Python3 和 pip3
+      sudo apt update -y
+      sudo apt install jupyter-notebook jupyter -y
+      
+      # 生成 Jupyter Notebook 配置文件
+      jupyter notebook --generate-config
+      
+      # 配置 Jupyter Notebook
+      cat <<EOL >> /root/.jupyter/jupyter_notebook_config.py
+      c.NotebookApp.port = 8888
+      c.NotebookApp.allow_remote_access = True
+      c.NotebookApp.ip = '*'
+      c.NotebookApp.open_browser = False
+      c.NotebookApp.token = ''
+      EOL
+      
+      # 创建 systemd 服务文件
+      cat > /etc/systemd/system/jupyter.service <<EOF
+      [Unit]
+      Description=Jupyter Notebook Service
+      
+      [Service]
+      Type=simple
+      User=root
+      Restart=on-failure
+      WorkingDirectory=/root
+      ExecStart=/usr/bin/jupyter notebook --allow-root
+      TimeoutStartSec=30
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      
+      # 启用并启动 Jupyter 服务
+      sudo systemctl enable jupyter
+      sudo systemctl start jupyter
