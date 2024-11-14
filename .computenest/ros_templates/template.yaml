@@ -1,7 +1,7 @@
 ROSTemplateFormatVersion: '2015-09-01'
 Description:
-  en: DockerCompose service template
-  zh-cn: DockerCompose服务模板
+  en: Jupyter Notebook Community Edition
+  zh-cn: Jupyter Notebook 社区版
 Parameters:
   ZoneId:
     Type: String
@@ -187,9 +187,9 @@ Parameters:
       - ubuntu
     AssociationPropertyMetadata:
       ValueLabelMapping:
-        linux: CentOS 7.9 64位
-        windows: Ubuntu 24.04 64位
-    Default: linux
+        centos: CentOS 7.9 64位
+        ubuntu: Ubuntu 24.04 64位
+    Default: centos
 Mappings: {}
 Conditions:
   CreateVpcConditions:
@@ -237,7 +237,7 @@ Resources:
           SourceCidrIp: 100.104.0.0/16
           IpProtocol: tcp
           NicType: internet
-  CentOSInstanceGroup:
+  InstanceGroup:
     Type: ALIYUN::ECS::InstanceGroup
     Properties:
       InstanceChargeType:
@@ -264,70 +264,30 @@ Resources:
       IoOptimized: optimized
       SystemDiskCategory: cloud_essd
       SystemDiskSize: 200
-      ImageId: centos_7_9_x64_20G_alibase_20240403.vhd
+      ImageId:
+        Fn::If:
+          - CentOS
+          - centos_7_9_x64_20G_alibase_20240403.vhd
+          - ubuntu_24_04_x64_20G_alibase_20241016.vhd
       InstanceType:
         Ref: EcsInstanceType
       Password:
         Ref: InstancePassword
       AllocatePublicIP: False
-  UbuntuInstanceGroup:
-    Type: ALIYUN::ECS::InstanceGroup
-    Properties:
-      InstanceChargeType:
-        Ref: PayType
-      PeriodUnit:
-        Ref: PayPeriodUnit
-      Period:
-        Ref: PayPeriod
-      VpcId:
-        Fn::If:
-          - CreateVpcConditions
-          - Ref: EcsVpc
-          - Ref: VpcId
-      VSwitchId:
-        Fn::If:
-          - CreateVpcConditions
-          - Ref: EcsVSwitch
-          - Ref: VSwitchId
-      ZoneId:
-        Ref: ZoneId
-      SecurityGroupId:
-        Ref: EcsSecurityGroup
-      MaxAmount: 1
-      IoOptimized: optimized
-      SystemDiskCategory: cloud_essd
-      SystemDiskSize: 200
-      ImageId: ubuntu_24_04_x64_20G_alibase_20241016.vhd
-      InstanceType:
-        Ref: EcsInstanceType
-      Password:
-        Ref: InstancePassword
-      AllocatePublicIP: False
-#      InternetMaxBandwidthOut: 5
 Outputs:
   ServerAddress:
     Description:
       en: ServerAddress.
       zh-cn: 访问页面。
     Value:
-      Fn::If:
-        - CentOS
-        - Fn::Sub:
-            - 'http://${ServerAddress}:8888'
-            - ServerAddress:
-                Fn::Select:
-                  - 0
-                  - Fn::GetAtt:
-                      - CentOSInstanceGroup
-                      - PrivateIps
-        - Fn::Sub:
-            - 'http://${ServerAddress}:8888'
-            - ServerAddress:
-                Fn::Select:
-                  - 0
-                  - Fn::GetAtt:
-                      - UbuntuInstanceGroup
-                      - PrivateIps
+      Fn::Sub:
+        - 'http://${ServerAddress}:8888'
+        - ServerAddress:
+            Fn::Select:
+              - 0
+              - Fn::GetAtt:
+                  - InstanceGroup
+                  - PrivateIps
 Metadata:
   ALIYUN::ROS::Interface:
     ParameterGroups:
